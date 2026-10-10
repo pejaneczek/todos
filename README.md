@@ -134,3 +134,7 @@ Coverage — `backend/coverage/index.html`:
 ```sh
 npm run test:coverage
 ```
+
+## Agentic tests
+
+A Claude Code agent (`test-writer`) with reusable skills creates and updates unit tests for changed code, locally (`npm run agentic-tests -- --base origin/main`) and automatically on pull requests. See [SOLUTION.md](SOLUTION.md).

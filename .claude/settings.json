@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --prefix backend test:*)",
+      "Bash(npm --prefix frontend test:*)",
+      "Bash(npm --prefix backend run test:coverage:*)",
+      "Bash(npm --prefix frontend run test:coverage:*)",
+      "Bash(npm --prefix backend run typecheck)",
+      "Bash(npm --prefix frontend run typecheck)",
+      "Bash(npm --prefix frontend run format:check)",
+      "Bash(npm run test:pipeline)",
+      "Bash(npm run agentic-tests:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(rm -rf:*)"
+    ]
+  }
+}

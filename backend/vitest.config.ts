@@ -7,11 +7,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/types.ts', 'src/generated/**'],
+      exclude: ['src/**/types.ts', 'src/generated/**', 'src/main.ts'],
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
       thresholds: {
         perFile: true,
+        lines: 80,
+        branches: 70,
         'src/features/todos/{validators,mappers}.ts': {
           statements: 100, branches: 100, functions: 100, lines: 100,
         },

@@ -1,0 +1,10 @@
+{
+  "name": "taskly-app-node",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "agentic-tests": "node scripts/agentic-tests/run.js",
+    "test:pipeline": "node --test \"scripts/agentic-tests/test/*.test.js\""
+  }
+}
