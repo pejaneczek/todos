@@ -1,0 +1,26 @@
+{
+  "agent": "test-writer",
+  "model": "claude-sonnet-5-5",
+  "maxTurns": 60,
+  "maxBudgetUsd": 5,
+  "timeoutMinutes": 20,
+  "batchSize": 8,
+  "allowedTools": [
+    "Read", "Glob", "Grep", "Skill",
+    "Edit(backend/tests/**)",
+    "Edit(frontend/src/**/*.test.ts)",
+    "Edit(frontend/src/**/*.test.tsx)",
+    "Edit(frontend/src/test/**)",
+    "Edit(.agentic-tests/agent-report.json)",
+    "Bash(npm --prefix backend test:*)", "Bash(npm --prefix frontend test:*)",
+    "Bash(npm --prefix backend run test:coverage:*)", "Bash(npm --prefix frontend run test:coverage:*)"
+  ],
+  "disallowedTools": [
+    "WebFetch", "WebSearch", "NotebookEdit",
+    "Bash(git:*)", "Bash(gh:*)", "Bash(curl:*)", "Bash(wget:*)",
+    "Bash(npm run agentic-tests:*)", "Bash(npm run test:pipeline:*)",
+    "Bash(npm --prefix backend run typecheck:*)", "Bash(npm --prefix frontend run typecheck:*)",
+    "Bash(npm --prefix frontend run format:check:*)", "Bash(npm run:*)",
+    "Read(./.env)", "Read(./**/.env)"
+  ]
+}

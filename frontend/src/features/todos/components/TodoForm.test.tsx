@@ -23,6 +23,44 @@ describe('TodoForm', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
+  it('prefills initial values, shows a server error and busy state', () => {
+    render(
+      <TodoForm
+        initial={{
+          title: 'Existing',
+          description: 'Notes',
+          priority: 'low',
+          due_date: '2026-12-01',
+          completed: false,
+        }}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        busy
+        error="Server said no"
+      />,
+    )
+    expect(screen.getByLabelText(/Task title/)).toHaveValue('Existing')
+    expect(screen.getByLabelText('Priority')).toHaveValue('low')
+    expect(screen.getByLabelText(/Due date/)).toHaveValue('2026-12-01')
+    expect(screen.getByText('Server said no')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
+  })
+
+  it('calls onCancel when cancel is clicked', async () => {
+    const user = userEvent.setup()
+    const onCancel = vi.fn()
+    render(
+      <TodoForm
+        onSubmit={vi.fn()}
+        onCancel={onCancel}
+        busy={false}
+        error={null}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
   it('submits trimmed values and the selected priority', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined)
     const user = userEvent.setup()

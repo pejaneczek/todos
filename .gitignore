@@ -1,0 +1,10 @@
+node_modules
+dist/
+coverage/
+storybook-static/
+backend/src/generated/
+.agentic-tests/
+.env
+.DS_Store
+*.log
+.idea/
