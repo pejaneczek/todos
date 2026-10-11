@@ -179,7 +179,7 @@ export function restore(root, snap, violations) {
 }
 
 // Empty files the Claude Code Bash sandbox (bubblewrap) creates at the repo root as bind-mount targets
-// for write-protected paths, and lists in .git/info/exclude. They are still removed, just not violations.
+// for write-protected paths. They are still removed, just not reported as violations.
 const SANDBOX_PLACEHOLDERS = new Set([
   '.env.development', '.env.development.local', '.env.local', '.env.production', '.env.production.local',
   '.env.test', '.env.test.local', '.gitmodules', '.npmrc', '.yarnrc', '.yarnrc.yml', 'bunfig.toml',
@@ -192,20 +192,13 @@ function isSandboxArtifact(root, snap, v) {
     const c = entryAt(root, v.file);
     return c?.type === 'file' && c.content.length === 0;
   }
+  // The sandbox also edits .git/info/exclude. enforce restores it and scans again, so any file
+  // an exclude entry hid is reported as created on the next pass; the edit itself is not.
   if (v.kind !== 'git-control') return false;
   const exclude = path.resolve(root, git(['rev-parse', '--git-path', 'info/exclude'], { cwd: root }));
   if (v.file !== exclude) return false;
   const s = snap.get(v.file);
-  if (s && s.type !== 'file') return false;
-  const c = leafEntry(v.file);
-  if (c?.type !== 'file') return false;
-  // Only appended lines are allowed, and each must be blank, a comment or a placeholder name.
-  const before = s ? s.content : Buffer.alloc(0);
-  if (!c.content.subarray(0, before.length).equals(before)) return false;
-  return c.content.subarray(before.length).toString('utf8').split('\n').every((line) => {
-    const t = line.trim().replace(/^\//, '');
-    return t === '' || t.startsWith('#') || SANDBOX_PLACEHOLDERS.has(t);
-  });
+  return (!s || s.type === 'file') && leafEntry(v.file)?.type === 'file';
 }
 
 export function enforce(root, snap) {
