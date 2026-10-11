@@ -178,13 +178,36 @@ export function restore(root, snap, violations) {
   for (const r of refs.filter((x) => snap.has(x.file)).sort((a, b) => depth(a) - depth(b))) writeEntryAt(r.base, r.rel, snap.get(r.file));
 }
 
+// Empty files the Claude Code Bash sandbox (bubblewrap) creates at the repo root as bind-mount targets
+// for write-protected paths. They are still removed, just not reported as violations.
+const SANDBOX_PLACEHOLDERS = new Set([
+  '.env.development', '.env.development.local', '.env.local', '.env.production', '.env.production.local',
+  '.env.test', '.env.test.local', '.gitmodules', '.npmrc', '.yarnrc', '.yarnrc.yml', 'bunfig.toml',
+  'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock',
+]);
+
+function isSandboxArtifact(root, snap, v) {
+  if (v.kind === 'created') {
+    if (!SANDBOX_PLACEHOLDERS.has(v.file)) return false;
+    const c = entryAt(root, v.file);
+    return c?.type === 'file' && c.content.length === 0;
+  }
+  // The sandbox also edits .git/info/exclude. enforce restores it and scans again, so any file
+  // an exclude entry hid is reported as created on the next pass; the edit itself is not.
+  if (v.kind !== 'git-control') return false;
+  const exclude = path.resolve(root, git(['rev-parse', '--git-path', 'info/exclude'], { cwd: root }));
+  if (v.file !== exclude) return false;
+  const s = snap.get(v.file);
+  return (!s || s.type === 'file') && leafEntry(v.file)?.type === 'file';
+}
+
 export function enforce(root, snap) {
   const seen = new Map();
   for (let i = 0; i < 5; i += 1) {
     const v = findViolations(root, snap);
     if (v.length === 0) break;
+    for (const x of v) if (!isSandboxArtifact(root, snap, x)) seen.set(`${x.kind}:${x.file}`, x);
     restore(root, snap, v);
-    for (const x of v) seen.set(`${x.kind}:${x.file}`, x);
   }
   return [...seen.values()];
 }

@@ -233,13 +233,44 @@ test('enforce removes a file hidden by a nested .gitignore, along with the .giti
   assert.deepEqual(findViolations(dir, snap), []);
 });
 
-test('an edit to .git/info/exclude is reported as git-control and the hidden file is removed', () => {
+test('a file hidden by .git/info/exclude is reported as created and removed, and the exclude restored', () => {
   const dir = makeRepo();
   const snap = snapshot(dir);
   writeFileSync(path.join(dir, '.git/info/exclude'), 'hidden.ts\n', { flag: 'a' });
   writeFileSync(path.join(dir, 'backend/src/hidden.ts'), 'x');
+  const before = snap.get(path.resolve(dir, '.git/info/exclude')).content;
   const reported = enforce(dir, snap);
-  assert.ok(reported.some((x) => x.kind === 'git-control' && x.file.endsWith(path.join('info', 'exclude'))), JSON.stringify(reported));
+  assert.ok(reported.some((x) => x.kind === 'created' && x.file === 'backend/src/hidden.ts'), JSON.stringify(reported));
   assert.equal(existsSync(path.join(dir, 'backend/src/hidden.ts')), false);
+  assert.deepEqual(readFileSync(path.join(dir, '.git/info/exclude')), before);
   assert.deepEqual(findViolations(dir, snap), []);
+});
+
+test('empty sandbox placeholders and their info/exclude entries are removed without being reported', () => {
+  const dir = makeRepo();
+  const snap = snapshot(dir);
+  const exclude = path.join(dir, '.git/info/exclude');
+  const before = readFileSync(exclude);
+  for (const f of ['.npmrc', '.env.local', 'yarn.lock']) writeFileSync(path.join(dir, f), '');
+  writeFileSync(exclude, 'rewritten by the sandbox\n/.npmrc\n.env.local\nyarn.lock');
+  assert.deepEqual(enforce(dir, snap), []);
+  for (const f of ['.npmrc', '.env.local', 'yarn.lock']) assert.equal(existsSync(path.join(dir, f)), false);
+  assert.deepEqual(readFileSync(exclude), before);
+});
+
+test('a placeholder name with content is still a violation, even when excluded', () => {
+  const dir = makeRepo();
+  const snap = snapshot(dir);
+  writeFileSync(path.join(dir, '.npmrc'), 'registry=https://evil.example\n');
+  writeFileSync(path.join(dir, '.git/info/exclude'), '.npmrc\n', { flag: 'a' });
+  const reported = enforce(dir, snap);
+  assert.ok(reported.some((x) => x.kind === 'created' && x.file === '.npmrc'), JSON.stringify(reported));
+  assert.equal(existsSync(path.join(dir, '.npmrc')), false);
+});
+
+test('a placeholder name below the repo root is a violation even when empty', () => {
+  const dir = makeRepo();
+  const snap = snapshot(dir);
+  writeFileSync(path.join(dir, 'backend/.npmrc'), '');
+  assert.ok(enforce(dir, snap).some((x) => x.kind === 'created' && x.file === 'backend/.npmrc'));
 });
