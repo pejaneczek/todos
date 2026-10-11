@@ -199,34 +199,56 @@ The backend figure after review excludes `src/main.ts` (process bootstrap), whic
 
 **Still below the bar.** `TodosPage.tsx` is at 69 % lines (the create, edit and delete handlers sit behind mocked children). `TodoForm.tsx` is at 87.5 % lines.
 
-### 5b. Demo PR (stats feature)
+### 5b. Demo PR (stats helper)
 
-Written with the delivery skills: `/ba-create-task` (task and issue), `/dev-implement` (feature branch, code, tests, PR), the Agentic tests workflow on the PR, `/dev-code-review` and `/qa-test`.
+A deliberately small demo to keep Claude usage low: one new pure backend function, `computeStats` in `backend/src/features/todos/stats.ts`, written by hand and pushed **without tests**, so the workflow has exactly one target and one batch. (The delivery skills were not used: `/dev-implement` writes tests itself, which would make the first run report `no-changes`.)
 
-`/dev-implement` writes tests itself, so the workflow may legitimately report `no-changes` (every file is already covered). To demonstrate a bot commit, push a follow-up change that adds behavior without tests, for example a new branch in a frontend component. The second run then reports `committed`.
+**Pull request:** [pejaneczek/todos#2](https://github.com/pejaneczek/todos/pull/2) (branch `feat/demo-1/stats-helper`)
 
-<!-- TODO after demo PR: PR link -->
-**Pull request:** TODO
-
-<!-- TODO after demo PR: sticky comment, copied verbatim from the PR -->
 **Sticky comment from the workflow:**
 
-> TODO
+> 🧪 **Agentic unit tests:** ✅ Tests added and committed
+>
+> **Verification (pipeline)**
+>
+> | Package | Passed | Failed | Lines | Branches |
+> |---|---|---|---|---|
+> | backend | 95 | 0 | 97.2% → 100.0% | 94.0% → 98.0% |
+>
+> **Decisions**
+>
+> | Source | Decision | Test file | Cases (+/~, agent-reported) | Reason |
+> |---|---|---|---|---|
+> | `backend/src/features/todos/stats.ts` | create | `backend/tests/stats.test.ts` | 6/0 | New untested module; covers empty list, all open, all done, and percentage rounding. |
+>
+> Committed `8a9706a` to the PR branch.
+>
+> **Run details:** Mode: ci, base `8f42947`. Skills used: backend-unit-tests, run-and-verify-tests, report-results. Agent turns: 14, cost: $0.07. Skipped before the agent ran: `.github/workflows/agentic-tests.yml`, `SOLUTION.md`, `scripts/agentic-tests/guard.js`, `scripts/agentic-tests/test/guard.test.js` (not application source).
 
-<!-- TODO after demo PR: decisions table (source, create/update/skip, reason) -->
-**Agent decisions:** TODO
+**Agent decisions:**
 
-<!-- TODO after demo PR: skills used, turns, cost -->
-**Skills used / turns / cost:** TODO
+| Source | Decision | Test file | Cases | Reason |
+|---|---|---|---|---|
+| `backend/src/features/todos/stats.ts` | create | `backend/tests/stats.test.ts` | 6 new | New untested module; covers empty list, all open, all done, and percentage rounding. |
 
-<!-- TODO after demo PR: verification and coverage numbers (passed/failed, lines/branches before -> after) -->
-**Verification and coverage:** TODO
+**Skills used / turns / cost:** `backend-unit-tests`, `run-and-verify-tests`, `report-results`; 14 turns; $0.07. (`analyze-pr-changes` was used in an earlier run of the same PR; in the final run the agent went straight to writing the test for a single new file.)
 
-<!-- TODO after demo PR: bot commit SHA and link -->
-**Bot commit:** TODO
+**Verification and coverage:** backend 95 passed, 0 failed. Lines 97.2 % → 100.0 %, branches 94.0 % → 98.0 % (package totals).
 
-<!-- TODO after demo PR: links to the code review and QA comments -->
-**Code review:** TODO. **QA:** TODO.
+**Bot commit:** [`8a9706a`](https://github.com/pejaneczek/todos/commit/8a9706a) on `feat/demo-1/stats-helper`, message `test: add/update unit tests for #2 [agentic-tests]`.
+
+**Runs it took, and what each one fixed.** The first CI runs on GitHub surfaced three environment issues that the local runs never hit. Each time the guard discarded all output rather than commit anything:
+
+| Run | Result | Cost | Cause and fix |
+|---|---|---|---|
+| 1 | `agent-failed`, 0 turns | $0.00 | `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` needs `bubblewrap`, absent on `ubuntu-latest`. The agent job now installs it and lifts Ubuntu 24.04's AppArmor restriction on unprivileged user namespaces. |
+| 2 | `guard-violation` | $0.08 | The Bash sandbox also needs `socat` (installed now), and it leaves empty placeholder files at the repo root (`.npmrc`, `.env.*`, lockfiles). The guard now removes these without reporting them, if they are empty, at the root and on a fixed list. The agent also flagged a real bug in the demo code (`t.done` instead of `t.completed`) as `suspected_bug` with `it.fails` tests; the source was fixed. |
+| 3 | `guard-violation` | $0.07 | The sandbox edits `.git/info/exclude`. The guard now restores it without reporting it, then re-scans, so a non-test file an exclude entry hid is still reported as created. |
+| 4 | `committed` | $0.07 | See above. |
+
+Total Claude usage for the demo: **$0.22**.
+
+**Code review / QA:** not run as separate steps for this demo; the generated test was reviewed by hand before merging.
 
 ## 6. Assumptions
 
