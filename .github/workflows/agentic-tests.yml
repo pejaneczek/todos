@@ -52,6 +52,14 @@ jobs:
           npm ci --prefix backend
           npm ci --prefix frontend
           npm install --global @anthropic-ai/claude-code@2.1.295
+      # CLAUDE_CODE_SUBPROCESS_ENV_SCRUB needs bubblewrap; Ubuntu 24.04 also blocks the unprivileged user namespaces bwrap uses.
+      - name: Install bubblewrap
+        if: steps.loop.outputs.skip != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          bwrap --ro-bind / / true
       - name: Run test-writer agent
         id: agent
         if: steps.loop.outputs.skip != 'true'
